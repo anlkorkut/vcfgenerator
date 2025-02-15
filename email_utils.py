@@ -5,16 +5,10 @@ email_utils.py code file.
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from src.logger import nb_logger
+from logger import init
+import streamlit as st
 
-logger = nb_logger.init(__name__)
-
-# Hardcoded email configuration
-SENDER_EMAIL = "erpjunior321@gmail.com"  # Replace with your email
-SENDER_PASSWORD = "fhyf micj owgu ocan"   # Replace with your app password
-RECIPIENT_EMAIL = "anlkorkut11@gmail.com" # Replace with recipient email
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
+logger = init(__name__)
 
 def send_missing_contacts_email(contacts):
     """
@@ -24,6 +18,13 @@ def send_missing_contacts_email(contacts):
         contacts: List of contact names with missing phone numbers
     """
     try:
+        # Get email configuration from Streamlit secrets
+        SENDER_EMAIL = st.secrets["EMAIL"]["sender"]
+        SENDER_PASSWORD = st.secrets["EMAIL"]["password"]
+        RECIPIENT_EMAIL = st.secrets["EMAIL"]["recipient"]
+        SMTP_SERVER = st.secrets["EMAIL"]["smtp_server"]
+        SMTP_PORT = st.secrets["EMAIL"]["smtp_port"]
+
         # Create message
         msg = MIMEMultipart()
         msg['From'] = SENDER_EMAIL
