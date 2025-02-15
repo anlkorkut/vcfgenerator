@@ -4,13 +4,13 @@ app.py code file.
 
 import streamlit as st
 from logger import init
-from apps.vcfgenerator.utils import (
-  parse_excel,
-  generate_summary,
-  generate_vcard,
-  is_valid_contact
+from utils import (
+    parse_excel,
+    generate_summary,
+    generate_vcard,
+    is_valid_contact
 )
-from apps.vcfgenerator.email_utils import send_missing_contacts_email
+from email_utils import send_missing_contacts_email
 import logging
 
 logger = logging.getLogger(__name__)
