@@ -98,6 +98,8 @@ INVALID (Exclude):
 "Meeting room for storage Park 5" -> SKIP
 "Sedef O'BRIEN & Pelin AKMAN (LAS&LAX)" -> SKIP
 
+"Output ONLY valid JSON with no additional text."
+
 Now, process these contacts:
 {contacts_data}
 """
