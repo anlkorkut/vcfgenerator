@@ -400,14 +400,42 @@ def is_valid_phone(phone):
 def is_valid_name(name):
     '''
     Check if the name is valid.
-    A valid name should contain at least two words and not contain irrelevant keywords.
+    A valid name should contain at least two words and not contain irrelevant keywords or patterns.
     '''
+    name_lower = name.lower()
+
+    # Must have at least two words
     if len(name.split()) < 2:
         return False
-    irrelevant_keywords = ["hotel", "flight", "brickell", "address", "conference", "airport", "vouchers", "group"]
+
+    # Check for parentheses (often contains location codes)
+    if '(' in name or ')' in name:
+        return False
+
+    # List of invalid keywords
+    irrelevant_keywords = [
+        # Locations and Travel
+        "hotel", "flight", "brickell", "address", "conference", "airport",
+        "miami", "new york", "nyc", "las vegas", "los angeles", "san francisco",
+        "city", "town", "street", "ave", "avenue", "road", "blvd",
+
+        # Business and Groups
+        "vouchers", "group", "office", "booking", "reservation",
+        "tour", "guide", "leader", "manager",
+
+        # Common city codes
+        "mia", "nyc", "sfo", "lax", "las", "orl",
+
+        # Conjunctions that might indicate multiple people
+        " and ", " & "
+    ]
+
+    # Check for any irrelevant keywords
     for keyword in irrelevant_keywords:
-        if keyword in name.lower():
+        if keyword in name_lower:
             return False
+
+    # All checks passed
     return True
 
 def is_valid_contact(name, phone):
