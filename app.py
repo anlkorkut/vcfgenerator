@@ -39,7 +39,7 @@ if not any(isinstance(f, DuplicateFilter) for f in logger.filters):
 
 def main():
     logger.info("Application started.")
-    st.title("Excel to VCF Converter with AI Data Cleaning & Summary")
+    st.title("🔮 Excel to VCF Converter with AI Data Cleaning & Summary")
 
     uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx", "xls"])
     if uploaded_file:
@@ -156,6 +156,8 @@ def main():
                     st.write(f"- Duplicates: {', '.join(info['duplicates'])}")
             else:
                 st.write("No duplicate numbers found.")
+    st.write("---")
+    st.markdown("<div style='text-align: center'>Made with ❤️ by ANIL KORKUT, 2025</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
