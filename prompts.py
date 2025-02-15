@@ -5,66 +5,98 @@ prompts.py code file.
 def system_prompt():
     '''
     Returns the system prompt for the data cleaning assistant.
-    Instruct the assistant to extract only valid individual contact information and ignore any irrelevant data.
+    Includes comprehensive rules for filtering travel industry specific data.
     '''
     return (
-        "You are an expert data cleaning assistant. Your task is to extract and clean only valid individual contact "
-        "information from an Excel file that contains a mix of relevant contact data and irrelevant data (such as flight "
-        "details, hotel names, addresses, and group booking information). Process only rows that represent a single "
-        "individual's contact with a name and a phone number. Apply strict cleaning rules and ignore any non-contact data."
+        "You are an expert data cleaning assistant specialized in extracting individual traveler "
+        "contact information from complex travel industry spreadsheets. Your task is to identify "
+        "and clean only valid individual contact information while strictly filtering out all "
+        "travel-related metadata, locations, and operational information.\n\n"
+        "A valid contact MUST:\n"
+        "1. Be a single individual's name (first and last name)\n"
+        "2. Have no location codes, titles, or role indicators\n"
+        "3. Not be part of operational or logistical information\n\n"
+        "You MUST exclude ANY entry that contains:\n"
+        "- Tour leader/guide information (e.g., 'Tour Leaders', 'Guide')\n"
+        "- Location codes in parentheses (e.g., '(SFO)', '(NYC)', '(MIA)', '(LAX)', '(LAS)', '(ORL)')\n"
+        "- Company or organization names (e.g., 'KANTARA', 'BUSA', 'SLL')\n"
+        "- Hotel names and addresses\n"
+        "- Meeting room or storage information\n"
+        "- City names or location information\n"
+        "- Multiple names connected by '&' or 'and'\n"
+        "- Travel dates or schedule information"
     )
 
 def bulk_content_prompt(contacts_data):
     '''
     Returns the content prompt for cleaning multiple contacts in bulk.
-
-    Args:
-        contacts_data (str): A string containing multiple contacts in the format "Name: <name>, Phone: <phone>"
-                           with each contact on a new line.
-
-    Returns:
-        str: The formatted prompt for bulk processing.
+    Includes detailed examples from travel industry data.
     '''
     template = """
-You are provided with a list of raw contact data extracted from an Excel file.
-Your task is to clean and validate each contact in the list.
+You are processing raw contact data from a travel industry spreadsheet. Your task is to identify and clean ONLY valid individual traveler contact information.
 
-Apply the following rules to EACH contact:
-1. Process only entries that represent individual contact information.
-2. Skip any entries containing:
-   - Hotel names
-   - Flight information
-   - Addresses
-   - Group booking details
-   - Tour guide/leader information
-   - Any other non-individual contact data
-3. For each valid contact:
-   - Remove titles (Mr., Ms., Mrs., Dr., etc.)
-   - Remove extra spaces
-   - Standardize phone numbers to +90XXXXXXXXXX format
-   - For phone numbers:
-     * If starts with '+90': keep as is
-     * If starts with '90', '0', '090', or '0090': remove and add '+90'
-     * If no prefix: add '+90'
+STRICT FILTERING RULES - Exclude ANY entry containing:
 
-Return a JSON array where each element has 'name' and 'phone' keys.
-Skip invalid contacts entirely (do not include them in the output array).
+1. Tour Leader/Guide Information:
+   - "Tour Leaders Sedef O'BRIEN (SFO)"
+   - "Tour Leader Kivanc ONER (MIA&ORL)"
+   - Any entry with tour guide indicators
 
-Examples of Processing:
+2. Location Codes:
+   - (SFO), (NYC), (MIA), (LAX), (LAS), (ORL)
+   - Any parenthetical location abbreviations
 
-Input Contacts:
-Name: Mr. John Smith, Phone: 05321234567
-Name: Hotel Booking, Phone: ABC123
-Name: Ms. Jane Doe, Phone: 90505987654
-Name: Tour Guide Info, Phone: 123456
+3. City Names and Addresses:
+   - "San Francisco"
+   - "Miami"
+   - "Las Vegas"
+   - "New York"
+   - "Los Angeles"
+   - "Orlando"
+   - Any street addresses or zip codes
 
-Expected Output:
-[
-    {{"name": "John Smith", "phone": "+905321234567"}},
-    {{"name": "Jane Doe", "phone": "+90505987654"}}
-]
+4. Hotel and Venue Information:
+   - "Hilton Garden Inn"
+   - "Treasure Island"
+   - "Sheraton"
+   - "Doubletree"
+   - Any hotel or venue names
 
-Notice that the hotel booking and tour guide entries are completely omitted.
+5. Operational Information:
+   - "Meeting room for storage"
+   - "Meeting space TBA"
+   - Room numbers or types
+   - Dates or schedules
+
+6. Company/Organization Names:
+   - "KANTARA"
+   - "BUSA"
+   - "SLL"
+   - Any business names
+
+7. Multiple Names or Combined Entries:
+   - "Sedef O'BRIEN & Pelin AKMAN"
+   - Any entries with '&' or 'and'
+
+For VALID contacts, clean as follows:
+1. Remove all titles (Mr., Ms., Mrs., Dr., etc.)
+2. Remove extra spaces
+3. Format phone numbers:
+   - Add '+90' prefix if missing
+   - Remove '90', '0', '090', or '0090' prefix
+   - Keep existing '+90' prefix
+
+Examples:
+
+VALID (Include):
+Input: "Mr. OZGUR AKSOY, 05321234567"
+Output: {{"name": "OZGUR AKSOY", "phone": "+905321234567"}}
+
+INVALID (Exclude):
+"Tour Leaders Sedef O'BRIEN (SFO)" -> SKIP
+"Miami Hilton Garden Inn" -> SKIP
+"Meeting room for storage Park 5" -> SKIP
+"Sedef O'BRIEN & Pelin AKMAN (LAS&LAX)" -> SKIP
 
 Now, process these contacts:
 {contacts_data}
