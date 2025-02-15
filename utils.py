@@ -86,56 +86,55 @@ def is_turkish_mobile(phone):
 
 def preprocess_excel(file):
     '''
-    Preprocess the Excel file to extract and clean relevant columns.
-    Returns a DataFrame with columns "Names", "Phone", and "Room" (if available).
+    Preprocess the Excel file with strict contact validation.
     '''
     logger.info("=== Starting Excel Preprocessing ===")
     try:
         # Read raw Excel data
         df = pd.read_excel(file, header=2)
         logger.info(f"Raw Excel data loaded: {len(df)} rows")
-        logger.info("Initial columns found: " + ", ".join([str(col) for col in df.columns.tolist()]))
 
-        # Log sample of raw data safely
-        logger.info("Sample of raw data (first 5 rows):")
-        for idx, row in df.head().iterrows():
-            try:
-                names = str(row['Names']) if pd.notna(row['Names']) else 'NULL'
-                phone = str(row['Phone']) if pd.notna(row['Phone']) else 'NULL'
-                logger.info(f"Raw row {idx} - Names: {names}, Phone: {phone}")
-            except Exception as e:
-                logger.warning(f"Could not log row {idx}: {str(e)}")
+        # Filter rows that look like metadata
+        def is_valid_row(row):
+            if pd.isna(row['Names']) or pd.isna(row['Phone']):
+                return False
 
-        # Forward fill
-        df["Names"] = df["Names"].ffill().astype(str)
-        df["Phone"] = df["Phone"].ffill().astype(str)
-        logger.info("Completed forward fill for Names and Phone columns")
+            name = str(row['Names']).strip()
 
-        # Select required columns
-        required_cols = ["Names", "Phone"]
-        if "Room" in df.columns:
-            required_cols.append("Room")
-        df = df[required_cols]
-        logger.info(f"Selected columns: {', '.join(required_cols)}")
+            # Reject if row contains obvious metadata indicators
+            invalid_patterns = [
+                '(', ')', '&',                     # Parentheses and multiple people
+                'hotel', 'tour', 'guide',          # Travel terms
+                'meeting', 'storage', 'space',     # Facility terms
+                'street', 'ave', 'st,', 'blvd',    # Address terms
+                'san francisco', 'las vegas',      # City names
+                'los angeles', 'miami', 'new york',
+                'sfo', 'nyc', 'lax', 'las', 'mia',  # City codes
+                'busa', 'sll', 'kantara'           # Company names
+            ]
 
-        # Remove null rows
-        initial_rows = len(df)
-        df = df[df["Names"].notnull() & df["Phone"].notnull()]
-        removed_rows = initial_rows - len(df)
-        logger.info(f"Removed {removed_rows} rows with null values")
+            name_lower = name.lower()
+            if any(pattern in name_lower for pattern in invalid_patterns):
+                logger.info(f"Filtered out metadata row: {name}")
+                return False
 
-        # Log final preprocessed data
-        logger.info(f"=== Preprocessing Complete: {len(df)} rows remaining ===")
-        logger.info("Final preprocessed data:")
-        for idx, row in df.iterrows():
-            try:
-                names = str(row['Names']) if pd.notna(row['Names']) else 'NULL'
-                phone = str(row['Phone']) if pd.notna(row['Phone']) else 'NULL'
-                logger.info(f"Preprocessed row {idx} - Names: {names}, Phone: {phone}")
-            except Exception as e:
-                logger.warning(f"Could not log row {idx}: {str(e)}")
+            # Check for numeric patterns (likely addresses)
+            if any(char.isdigit() for char in name):
+                logger.info(f"Filtered out row with numbers: {name}")
+                return False
 
-        return df
+            return True
+
+        # Apply filtering
+        df_filtered = df[df.apply(is_valid_row, axis=1)].copy()
+        logger.info(f"Filtered from {len(df)} to {len(df_filtered)} rows")
+
+        # Clean contact data
+        df_filtered['Names'] = df_filtered['Names'].str.strip()
+        df_filtered['Phone'] = df_filtered['Phone'].astype(str).str.strip()
+
+        logger.info("Successfully preprocessed Excel data")
+        return df_filtered
 
     except Exception as e:
         logger.error(f"Error in preprocessing Excel: {str(e)}")
